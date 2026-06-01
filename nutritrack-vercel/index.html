@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="NutriTrack AI">
+<title>NutriTrack AI</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+:root{
+  --bg:#0f0e11;--card:#1a1820;--border:#2e2b38;
+  --accent:#c8f565;--protein:#60a5fa;--carbs:#f59e0b;
+  --fat:#f472b6;--text:#f0eef5;--muted:#8b87a0;--over:#f87171;
+}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;padding-bottom:40px;}
+button{cursor:pointer;transition:opacity .15s;font-family:inherit;}
+button:active{opacity:.7;}
+textarea,input{font-family:inherit;}
+textarea:focus,input:focus{outline:none;}
+textarea::placeholder,input::placeholder{color:#6b6882;}
+
+/* Layout */
+.sticky-header{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--border);padding:18px 20px 0;}
+.container{max-width:680px;margin:0 auto;padding:20px;}
+.tab-bar{display:flex;gap:4px;background:var(--card);border-radius:12px;padding:4px;border:1px solid var(--border);margin-bottom:0;}
+.tab-btn{flex:1;border:none;border-radius:9px;padding:9px 0;font-weight:700;font-size:13px;}
+.tab-active{background:var(--accent);color:#0f0e11;}
+.tab-inactive{background:transparent;color:var(--muted);}
+
+/* Cards */
+.card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:18px;margin-bottom:14px;}
+.card-gradient{background:linear-gradient(135deg,#1e1c2a,#16141f);border:1px solid rgba(200,245,101,.25);border-radius:20px;padding:22px;margin-bottom:24px;}
+
+/* Macro badges */
+.macro-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+.macro-badge{border-radius:12px;padding:10px 14px;display:flex;flex-direction:column;align-items:center;min-width:76px;}
+.macro-val{font-weight:700;font-size:18px;}
+.macro-lbl{font-size:10px;margin-top:2px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);}
+
+/* Goal bars */
+.goal-bar-wrap{margin-bottom:14px;}
+.goal-bar-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px;font-size:13px;}
+.goal-bar-track{height:7px;border-radius:4px;overflow:hidden;}
+.goal-bar-fill{height:100%;border-radius:4px;transition:width .5s ease;}
+
+/* Input area */
+.input-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:20px;margin-bottom:22px;transition:border-color .2s;}
+.input-card.drag-over{border-color:var(--accent);}
+.meal-type-btn{border-radius:8px;padding:7px 15px;font-size:12px;font-weight:700;border:1px solid var(--border);}
+.meal-type-active{background:var(--accent);color:#0f0e11;border-color:var(--accent);}
+.meal-type-inactive{background:transparent;color:var(--muted);}
+.meal-textarea{width:100%;background:transparent;border:none;color:var(--text);font-size:15px;resize:none;line-height:1.6;margin-bottom:14px;}
+.action-row{display:flex;gap:10px;align-items:center;}
+.photo-btn{background:rgba(200,245,101,.12);border:1px solid rgba(200,245,101,.35);border-radius:10px;padding:10px 18px;color:var(--accent);font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;}
+.analyze-btn{flex:1;border:none;border-radius:10px;padding:11px 20px;font-weight:700;font-size:14px;}
+.analyze-active{background:var(--accent);color:#0f0e11;}
+.analyze-disabled{background:var(--border);color:var(--muted);cursor:default;}
+
+/* Meal cards */
+.meal-header{display:flex;gap:14px;margin-bottom:12px;}
+.meal-img{width:80px;height:80px;object-fit:cover;border-radius:12px;border:1px solid var(--border);flex-shrink:0;}
+.meal-badge{display:inline-block;background:var(--accent);color:#0f0e11;border-radius:6px;padding:2px 9px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;}
+.meal-desc{color:var(--text);font-weight:600;font-size:14px;line-height:1.5;word-break:break-word;}
+.delete-btn{background:transparent;border:none;color:var(--muted);font-size:22px;line-height:1;padding:0 4px;margin-left:auto;flex-shrink:0;}
+.spinner{width:18px;height:18px;border:2px solid var(--accent);border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;flex-shrink:0;}
+.error-box{color:var(--over);font-size:12px;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.25);border-radius:8px;padding:8px 12px;}
+.breakdown-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:12px;border-bottom:1px solid rgba(255,255,255,.04);}
+.breakdown-row:last-child{border-bottom:none;}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;}
+.modal-box{background:#1a1820;border-radius:20px;padding:28px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;}
+.modal-img{width:90px;height:90px;object-fit:cover;border-radius:12px;border:1px solid var(--border);flex-shrink:0;}
+.modal-textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-size:14px;resize:none;margin-bottom:16px;}
+
+/* History */
+.hist-card{background:var(--card);border-radius:18px;padding:18px;margin-bottom:14px;}
+.hist-today{border:1px solid var(--accent);}
+.hist-normal{border:1px solid var(--border);}
+.progress-bar{height:5px;background:rgba(200,245,101,.2);border-radius:3px;overflow:hidden;margin-bottom:12px;}
+.progress-fill{height:100%;background:var(--accent);border-radius:3px;}
+
+/* Loading pulse */
+.loading-text{color:var(--muted);font-size:13px;display:flex;align-items:center;gap:10px;}
+
+/* Animations */
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes slideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.slide-in{animation:slideIn .3s ease;}
+
+/* AI badge */
+.ai-badge{display:flex;align-items:center;gap:7px;background:rgba(200,245,101,.12);border:1px solid rgba(200,245,101,.3);border-radius:10px;padding:5px 12px;}
+.ai-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* Empty state */
+.empty-state{text-align:center;color:var(--muted);font-size:14px;padding:50px 20px;line-height:2.2;}
+
+/* Responsive */
+@media(max-width:480px){
+  .sticky-header{padding:14px 16px 0;}
+  .container{padding:16px;}
+  .macro-badge{min-width:68px;padding:8px 10px;}
+  .macro-val{font-size:16px;}
+  h1{font-size:22px;}
+}
+</style>
+</head>
+<body>
+
+<!-- PHOTO MODAL -->
+<div id="modal" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <div style="display:flex;gap:16px;margin-bottom:18px;align-items:center;">
+      <img id="modal-preview" src="" class="modal-img">
+      <div>
+        <div style="color:var(--accent);font-weight:700;font-size:17px;margin-bottom:4px;">Photo ready ✓</div>
+        <div style="color:var(--muted);font-size:13px;">Add a description for better accuracy (optional)</div>
+      </div>
+    </div>
+    <textarea id="modal-desc" class="modal-textarea" rows="2" placeholder="e.g. large portion, with extra sauce, home cooked…"></textarea>
+    <div style="display:flex;gap:10px;">
+      <button onclick="closeModal()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;padding:11px;color:var(--muted);font-size:14px;font-weight:600;">Cancel</button>
+      <button onclick="confirmPhoto()" style="flex:2;background:var(--accent);color:#0f0e11;border:none;border-radius:10px;padding:11px;font-size:14px;font-weight:700;">Analyze with Claude AI →</button>
+    </div>
+  </div>
+</div>
+
+<!-- STICKY HEADER -->
+<div class="sticky-header">
+  <div class="container" style="padding-bottom:0;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <div>
+        <div style="color:var(--accent);font-size:10px;letter-spacing:3px;text-transform:uppercase;margin-bottom:4px;">Daily Nutrition Log</div>
+        <h1 style="font-weight:800;font-size:26px;line-height:1.15;">What did you <span style="color:var(--accent);">eat today?</span></h1>
+      </div>
+      <div class="ai-badge">
+        <div class="ai-dot"></div>
+        <span style="color:var(--accent);font-size:12px;font-weight:600;">Claude AI</span>
+      </div>
+    </div>
+    <div class="tab-bar">
+      <button class="tab-btn tab-active" id="tab-today" onclick="switchTab('today')">🍽 Today</button>
+      <button class="tab-btn tab-inactive" id="tab-history" onclick="switchTab('history')">📅 History</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="container">
+
+  <!-- TODAY VIEW -->
+  <div id="view-today">
+
+    <!-- Storage status (debug) -->
+    <div id="storage-status" style="margin-top:16px;margin-bottom:8px;padding:8px 12px;border-radius:8px;font-size:12px;background:rgba(200,245,101,.1);border:1px solid rgba(200,245,101,.3);color:var(--accent);display:none;"></div>
+
+    <!-- Goals panel -->
+    <div class="card" style="margin-top:20px;margin-bottom:20px;">
+      <div style="color:var(--muted);font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">Your Daily Goals</div>
+      <div style="display:flex;flex-wrap:wrap;">
+        <div style="flex:1;min-width:70px;text-align:center;"><div style="font-size:16px;">🔥</div><div style="color:var(--accent);font-weight:700;font-size:16px;">2440<span style="font-size:10px;">kcal</span></div><div style="color:var(--muted);font-size:11px;">Cal</div></div>
+        <div style="flex:1;min-width:70px;text-align:center;"><div style="font-size:16px;">💪</div><div style="color:var(--protein);font-weight:700;font-size:16px;">180<span style="font-size:10px;">g</span></div><div style="color:var(--muted);font-size:11px;">Protein</div></div>
+        <div style="flex:1;min-width:70px;text-align:center;"><div style="font-size:16px;">🌾</div><div style="color:var(--carbs);font-weight:700;font-size:16px;">250<span style="font-size:10px;">g</span></div><div style="color:var(--muted);font-size:11px;">Carbs</div></div>
+        <div style="flex:1;min-width:70px;text-align:center;"><div style="font-size:16px;">🥑</div><div style="color:var(--fat);font-weight:700;font-size:16px;">80<span style="font-size:10px;">g</span></div><div style="color:var(--muted);font-size:11px;">Fat</div></div>
+      </div>
+    </div>
+
+    <!-- Daily summary (injected by JS) -->
+    <div id="daily-summary"></div>
+
+    <!-- Input card -->
+    <div class="input-card" id="input-card" 
+      ondragover="event.preventDefault();this.classList.add('drag-over')"
+      ondragleave="this.classList.remove('drag-over')"
+      ondrop="event.preventDefault();this.classList.remove('drag-over');handleDrop(event)">
+
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;" id="meal-type-row"></div>
+
+      <textarea id="meal-input" class="meal-textarea" rows="3"
+        placeholder="Describe your meal in any detail, any language…&#10;e.g. '3 fried eggs with olive oil', '200g grilled salmon', 'شاورما دجاج مع خبز'"
+        oninput="updateBtn()"></textarea>
+
+      <div class="action-row">
+        <button class="photo-btn" onclick="triggerPhoto()">📷 Photo</button>
+        <input type="file" id="photo-input" accept="image/*" style="display:none" onchange="handlePhotoInput(this)">
+        <div style="flex:1;color:var(--muted);font-size:12px;text-align:center;">or drag & drop</div>
+        <button id="analyze-btn" class="analyze-btn analyze-disabled" onclick="logMealFromText()">Analyze →</button>
+      </div>
+    </div>
+
+    <!-- Meals list -->
+    <div id="meals-list"></div>
+  </div>
+
+  <!-- HISTORY VIEW -->
+  <div id="view-history" style="display:none;margin-top:20px;">
+    <div id="history-list"></div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+// ── Config ───────────────────────────────────────────────────────────────────
+// API key is stored securely in Netlify environment variables
+const GOALS  = {calories:2440, protein:180, carbs:250, fat:80};
+
+// ── Server Storage (persists across all devices and deploys) ─────────────────
+function stripMealsForSave(mealsArr){
+  return (mealsArr||[]).map(function(m){
+    return {
+      description: m.description,
+      mealType: m.mealType,
+      imageUrl: null,
+      loading: false,
+      nutrition: m.nutrition,
+      error: m.error
+    };
+  });
+}
+
+function serverSave(historyData){
+  var toSave = {};
+  Object.keys(historyData).forEach(function(k){
+    toSave[k] = stripMealsForSave(historyData[k]);
+  });
+  fetch("/api/analyze", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({action:"save", history:toSave})
+  }).then(function(r){ return r.json(); })
+    .then(function(d){ console.log("Saved to server OK:", JSON.stringify(d)); })
+    .catch(function(e){ console.error("Server save failed:", e); });
+  // Also save locally as backup
+  try{ localStorage.setItem("nt-backup", JSON.stringify(toSave)); }catch(e){}
+}
+
+function serverLoad(cb){
+  fetch("/api/analyze", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({action:"load"})
+  }).then(function(r){ return r.json(); })
+    .then(function(d){
+      var h = d.history || {};
+      var keys = Object.keys(h);
+      console.log("Loaded from server:", keys.length, "days, keys:", JSON.stringify(keys));
+      console.log("Today key:", todayKey());
+      if(h[todayKey()]) console.log("Today meals:", h[todayKey()].length);
+      cb(h);
+    })
+    .catch(function(e){
+      console.error("Server load failed:", e);
+      try{
+        var local = localStorage.getItem("nt-backup");
+        if(local){ cb(JSON.parse(local)); return; }
+      }catch(ex){}
+      cb({});
+    });
+}
+
+// ── State ────────────────────────────────────────────────────────────────────
+var currentTab   = "today";
+var mealType     = "Breakfast";
+var meals        = [];   // today's meals
+var history      = {};   // {dateKey: [meals]}
+var pendingPhoto = null; // {imageUrl, imageBase64:{data,mediaType}}
+
+// ── Storage ──────────────────────────────────────────────────────────────────
+function todayKey(){
+  var d=new Date();
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+function formatDate(k){
+  var p=k.split("-");
+  return new Date(+p[0],+p[1]-1,+p[2]).toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});
+}
+function save(){
+  serverSave(history);
+}
+function load(){
+  try {
+    var raw = localStorage.getItem("nt-backup");
+    if(raw){
+      history = JSON.parse(raw);
+      var k = todayKey();
+      meals = history[k] ? history[k] : [];
+      console.log("Loaded from localStorage:", Object.keys(history).length, "days,", meals.length, "meals today");
+    }
+  } catch(e){ 
+    console.error("Load error:", e); 
+    history = {};
+    meals = [];
+  }
+  renderMealTypeBtns();
+  renderAll();
+}
+function dayTotals(ms){
+  return (ms||[]).filter(function(m){return m.nutrition;}).reduce(function(acc,m){
+    return {calories:acc.calories+(m.nutrition.calories||0), protein:acc.protein+(m.nutrition.protein||0),
+            carbs:acc.carbs+(m.nutrition.carbs||0), fat:acc.fat+(m.nutrition.fat||0)};
+  },{calories:0,protein:0,carbs:0,fat:0});
+}
+
+// ── Claude API ───────────────────────────────────────────────────────────────
+async function analyzeWithClaude(description, imageBase64){
+
+  var userContent = [];
+
+  if(imageBase64){
+    userContent.push({type:"image", source:{type:"base64", media_type:imageBase64.mediaType, data:imageBase64.data}});
+  }
+
+  var prompt = imageBase64
+    ? "You are a precise nutrition expert. Analyze this food image" + (description ? ' (described as: "'+description+'")' : "") + ". Identify every food item visible, estimate portion sizes realistically based on what you see, and calculate total macros. Reply with ONLY valid JSON, no explanation:\n{\"description\":\"brief summary\",\"calories\":0,\"protein\":0,\"carbs\":0,\"fat\":0,\"items\":[{\"name\":\"food\",\"amount\":\"portion\",\"calories\":0,\"protein\":0,\"carbs\":0,\"fat\":0}]}"
+    : "You are a precise nutrition expert. Calculate macros for: \""+description+"\". Parse quantities and ingredients carefully. Reply with ONLY valid JSON:\n{\"description\":\""+description+"\",\"calories\":0,\"protein\":0,\"carbs\":0,\"fat\":0,\"items\":[{\"name\":\"food\",\"amount\":\"portion\",\"calories\":0,\"protein\":0,\"carbs\":0,\"fat\":0}]}";
+
+  userContent.push({type:"text", text:prompt});
+
+  // Call our Netlify function (avoids CORS)
+  var response = await fetch("/api/analyze", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ messages: [{role:"user", content:userContent}] })
+  });
+
+  var rawText = await response.text();
+  var data;
+  try { data = JSON.parse(rawText); } catch(e) { throw new Error("Parse error: "+rawText.slice(0,200)); }
+  if(!response.ok || data.error) throw new Error(data.error&&data.error.message?data.error.message:"API error "+response.status);
+  var text = (data.content||[]).map(function(b){return b.text||"";}).join("");
+  var match = text.match(/\{[\s\S]*\}/);
+  if(!match) throw new Error("Could not parse response");
+  var result = JSON.parse(match[0]);
+  ["calories","protein","carbs","fat"].forEach(function(k){ result[k]=Math.round(Number(result[k])||0); });
+  if(result.items) result.items.forEach(function(it){
+    ["calories","protein","carbs","fat"].forEach(function(k){ it[k]=Math.round(Number(it[k])||0); });
+  });
+  return result;
+}
+
+// ── Render helpers ────────────────────────────────────────────────────────────
+function macroBadge(label, val, unit, color){
+  return '<div class="macro-badge" style="background:'+color+'18;border:1px solid '+color+'40;">'
+    +'<span class="macro-val" style="color:'+color+';">'+val+'<span style="font-size:11px;">'+unit+'</span></span>'
+    +'<span class="macro-lbl">'+label+'</span></div>';
+}
+
+function goalBar(label, cur, goal, color, unit){
+  var pct=Math.min((cur/goal)*100,100), over=cur>goal, c=over?"var(--over)":color;
+  return '<div class="goal-bar-wrap">'
+    +'<div class="goal-bar-header"><span style="color:var(--text);font-weight:600;">'+label+'</span>'
+    +'<span><span style="color:'+c+';font-weight:700;">'+cur+unit+'</span>'
+    +' <span style="color:var(--muted);">/ '+goal+unit+'</span>'
+    +' <span style="color:'+(over?"var(--over)":"var(--muted)")+';font-size:11px;">'+(over?"+"+( cur-goal)+" over":(goal-cur)+" left")+'</span>'
+    +'</span></div>'
+    +'<div class="goal-bar-track" style="background:'+color+'20;">'
+    +'<div class="goal-bar-fill" style="width:'+pct+'%;background:'+c+';"></div></div></div>';
+}
+
+function renderSummary(){
+  var done = meals.filter(function(m){return m.nutrition&&!m.loading;});
+  if(!done.length){document.getElementById("daily-summary").innerHTML="";return;}
+  var t = dayTotals(done);
+  var calPct = Math.round((t.calories/GOALS.calories)*100);
+  var over = calPct>=100;
+  document.getElementById("daily-summary").innerHTML =
+    '<div class="card-gradient">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">'
+    +'<div style="color:var(--accent);font-weight:700;font-size:11px;letter-spacing:2px;text-transform:uppercase;">Daily Progress · '+done.length+' meal'+(done.length!==1?"s":"")+'</div>'
+    +'<div style="background:'+(over?"rgba(248,113,113,.15)":"rgba(200,245,101,.15)")+';border:1px solid '+(over?"rgba(248,113,113,.4)":"rgba(200,245,101,.4)")+';border-radius:20px;padding:3px 14px;color:'+(over?"var(--over)":"var(--accent)")+';font-size:13px;font-weight:700;">'+calPct+'% of goal</div>'
+    +'</div>'
+    +'<div class="macro-row">'
+    +macroBadge("Calories",t.calories," kcal","var(--accent)")
+    +macroBadge("Protein",t.protein,"g","var(--protein)")
+    +macroBadge("Carbs",t.carbs,"g","var(--carbs)")
+    +macroBadge("Fat",t.fat,"g","var(--fat)")
+    +'</div>'
+    +'<div style="border-top:1px solid var(--border);padding-top:16px;">'
+    +'<div style="color:var(--muted);font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;">Progress vs Goals</div>'
+    +goalBar("Calories",t.calories,GOALS.calories,"var(--accent)"," kcal")
+    +goalBar("Protein",t.protein,GOALS.protein,"var(--protein)","g")
+    +goalBar("Carbs",t.carbs,GOALS.carbs,"var(--carbs)","g")
+    +goalBar("Fat",t.fat,GOALS.fat,"var(--fat)","g")
+    +'</div></div>';
+}
+
+function renderMeals(){
+  var list = document.getElementById("meals-list");
+  if(!meals.length){
+    list.innerHTML='<div class="empty-state">'
+      +'<div style="font-size:40px;margin-bottom:14px;">🍽</div>'
+      +'<div style="font-weight:600;color:var(--text);font-size:16px;margin-bottom:8px;">Powered by Claude AI</div>'
+      +'Describe any meal in any language<br>'
+      +'Upload a food photo for instant analysis<br>'
+      +'<span style="font-size:12px;opacity:.6;">No database limits — Claude understands everything</span>'
+      +'</div>';
+    return;
+  }
+  list.innerHTML = meals.map(function(m,i){
+    var imgHtml = m.imageUrl ? '<img src="'+m.imageUrl+'" class="meal-img">' : "";
+    var bodyHtml = "";
+    if(m.loading){
+      bodyHtml = '<div class="loading-text"><div class="spinner"></div>Claude is analyzing your meal…</div>';
+    } else if(m.error){
+      bodyHtml = '<div class="error-box">⚠ '+m.error+'</div>';
+    } else if(m.nutrition){
+      bodyHtml = '<div class="macro-row">'
+        +macroBadge("Calories",m.nutrition.calories," kcal","var(--accent)")
+        +macroBadge("Protein",m.nutrition.protein,"g","var(--protein)")
+        +macroBadge("Carbs",m.nutrition.carbs,"g","var(--carbs)")
+        +macroBadge("Fat",m.nutrition.fat,"g","var(--fat)")
+        +'</div>';
+      if(m.nutrition.items&&m.nutrition.items.length){
+        bodyHtml += '<div style="border-top:1px solid var(--border);padding-top:10px;">'
+          +m.nutrition.items.map(function(it){
+            return '<div class="breakdown-row">'
+              +'<div><span style="color:var(--text);font-weight:500;font-size:13px;">'+it.name+'</span>'
+              +'<span style="color:var(--muted);font-size:12px;margin-left:8px;">'+it.amount+'</span></div>'
+              +'<div style="display:flex;gap:10px;font-size:12px;">'
+              +'<span style="color:var(--accent);">'+it.calories+' kcal</span>'
+              +'<span style="color:var(--protein);">P:'+it.protein+'g</span>'
+              +'<span style="color:var(--carbs);">C:'+it.carbs+'g</span>'
+              +'<span style="color:var(--fat);">F:'+it.fat+'g</span>'
+              +'</div></div>';
+          }).join("")
+          +'</div>';
+      }
+    }
+    return '<div class="card slide-in">'
+      +'<div class="meal-header">'
+      +imgHtml
+      +'<div style="flex:1;min-width:0;">'
+      +'<div style="display:flex;align-items:flex-start;">'
+      +'<span class="meal-badge">'+m.mealType+'</span>'
+      +'<button class="delete-btn" onclick="deleteMeal('+i+')">×</button>'
+      +'</div>'
+      +'<div class="meal-desc">'+(m.description||'<span style="color:var(--muted);font-style:italic;font-weight:400;">Analyzing…</span>')+'</div>'
+      +'</div></div>'
+      +bodyHtml+'</div>';
+  }).join("");
+}
+
+function renderAll(){renderSummary();renderMeals();}
+
+// ── History ───────────────────────────────────────────────────────────────────
+function renderHistory(){
+  var days = Object.keys(history).filter(function(k){return history[k]&&history[k].length;})
+    .sort(function(a,b){return b.localeCompare(a);});
+  if(!days.length){
+    document.getElementById("history-list").innerHTML='<div class="empty-state"><div style="font-size:36px;margin-bottom:12px;">📅</div>No history yet.<br>Start logging meals today!</div>';
+    return;
+  }
+  document.getElementById("history-list").innerHTML = days.map(function(key){
+    var ms=history[key], t=dayTotals(ms);
+    var calPct=Math.min(Math.round((t.calories/GOALS.calories)*100),100);
+    var isToday=key===todayKey();
+    var mealsDone=ms.filter(function(m){return m.nutrition;});
+    return '<div class="hist-card '+(isToday?"hist-today":"hist-normal")+'">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">'
+      +'<div><div style="color:'+(isToday?"var(--accent)":"var(--text)")+';font-weight:700;font-size:16px;">'+(isToday?"Today":formatDate(key))+'</div>'
+      +'<div style="color:var(--muted);font-size:12px;margin-top:2px;">'+mealsDone.length+' meal'+(mealsDone.length!==1?"s":"")+'</div></div>'
+      +'<div style="text-align:right;"><div style="color:var(--accent);font-weight:700;font-size:20px;">'+t.calories+'<span style="font-size:12px;"> kcal</span></div>'
+      +'<div style="color:var(--muted);font-size:12px;">'+calPct+'% of goal</div></div></div>'
+      +'<div class="macro-row">'
+      +'<div class="macro-badge" style="background:rgba(96,165,250,.12);border:1px solid rgba(96,165,250,.35);"><span class="macro-val" style="color:var(--protein);">'+t.protein+'<span style="font-size:10px;">g</span></span><span class="macro-lbl">P</span></div>'
+      +'<div class="macro-badge" style="background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.35);"><span class="macro-val" style="color:var(--carbs);">'+t.carbs+'<span style="font-size:10px;">g</span></span><span class="macro-lbl">C</span></div>'
+      +'<div class="macro-badge" style="background:rgba(244,114,182,.12);border:1px solid rgba(244,114,182,.35);"><span class="macro-val" style="color:var(--fat);">'+t.fat+'<span style="font-size:10px;">g</span></span><span class="macro-lbl">F</span></div>'
+      +'</div>'
+      +'<div class="progress-bar"><div class="progress-fill" style="width:'+calPct+'%;"></div></div>'
+      +mealsDone.map(function(m){
+        return '<div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-top:7px;">'
+          +'<div style="display:flex;align-items:center;gap:7px;min-width:0;overflow:hidden;">'
+          +'<span class="meal-badge" style="font-size:9px;flex-shrink:0;">'+m.mealType+'</span>'
+          +'<span style="color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+m.description+'</span></div>'
+          +'<span style="color:var(--text);font-weight:600;white-space:nowrap;margin-left:8px;">'+m.nutrition.calories+' kcal</span></div>';
+      }).join("")
+      +'</div>';
+  }).join("");
+}
+
+// ── Tabs ─────────────────────────────────────────────────────────────────────
+function switchTab(t){
+  currentTab=t;
+  document.getElementById("view-today").style.display=t==="today"?"block":"none";
+  document.getElementById("view-history").style.display=t==="history"?"block":"none";
+  document.getElementById("tab-today").className="tab-btn "+(t==="today"?"tab-active":"tab-inactive");
+  document.getElementById("tab-history").className="tab-btn "+(t==="history"?"tab-active":"tab-inactive");
+  if(t==="history") renderHistory();
+}
+
+// ── Meal type buttons ─────────────────────────────────────────────────────────
+function renderMealTypeBtns(){
+  document.getElementById("meal-type-row").innerHTML=
+    ["Breakfast","Lunch","Dinner","Snack"].map(function(t){
+      var active=t===mealType;
+      return '<button class="meal-type-btn '+(active?"meal-type-active":"meal-type-inactive")+'" onclick="setMealType(\''+t+'\')">'+t+'</button>';
+    }).join("");
+}
+function setMealType(t){mealType=t;renderMealTypeBtns();}
+
+// ── Input ─────────────────────────────────────────────────────────────────────
+function updateBtn(){
+  var hasText=document.getElementById("meal-input").value.trim().length>0;
+  var btn=document.getElementById("analyze-btn");
+  btn.className="analyze-btn "+(hasText?"analyze-active":"analyze-disabled");
+}
+
+document.getElementById("meal-input").addEventListener("keydown",function(e){
+  if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();logMealFromText();}
+});
+
+function logMealFromText(){
+  var text=document.getElementById("meal-input").value.trim();
+  if(!text) return;
+  document.getElementById("meal-input").value="";
+  updateBtn();
+  logMeal({description:text});
+}
+
+// ── Log meal ──────────────────────────────────────────────────────────────────
+async function logMeal(opts){
+  var description=opts.description||"";
+  var imageBase64=opts.imageBase64||null;
+  var imageUrl=opts.imageUrl||null;
+
+  var idx=meals.length;
+  var newMeal={description:description, mealType:mealType, imageUrl:imageUrl, loading:true, nutrition:null, error:null};
+  meals.push(newMeal);
+  renderAll();
+
+  try{
+    var nutrition=await analyzeWithClaude(description, imageBase64);
+    meals[idx]=Object.assign({}, meals[idx], {description:nutrition.description||description, nutrition:nutrition, loading:false});
+    var key=todayKey();
+    history[key]=meals.slice();
+    save();
+    renderAll();
+    console.log("Meal saved successfully:", meals[idx].description);
+  }catch(err){
+    meals[idx]=Object.assign({}, meals[idx], {loading:false, error:"Analysis failed: "+err.message});
+    renderAll();
+    console.error("Analysis error:", err.message);
+  }
+}
+
+function deleteMeal(i){
+  meals.splice(i,1);
+  var key=todayKey();
+  history[key]=meals.slice();
+  save();
+  renderAll();
+}
+
+// ── Photo ─────────────────────────────────────────────────────────────────────
+function triggerPhoto(){document.getElementById("photo-input").click();}
+
+function handlePhotoInput(input){
+  var file=input.files[0];
+  if(!file) return;
+  processImageFile(file);
+  input.value="";
+}
+
+function handleDrop(e){
+  var file=e.dataTransfer.files[0];
+  processImageFile(file);
+}
+
+function processImageFile(file){
+  if(!file||!file.type.startsWith("image/")) return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var b64=e.target.result;
+    var parts=b64.split(",");
+    var mediaType=parts[0].match(/:(.*?);/)[1];
+    pendingPhoto={imageUrl:b64, imageBase64:{data:parts[1], mediaType:mediaType}};
+    document.getElementById("modal-preview").src=b64;
+    document.getElementById("modal-desc").value="";
+    document.getElementById("modal").style.display="flex";
+  };
+  reader.readAsDataURL(file);
+}
+
+function closeModal(){
+  document.getElementById("modal").style.display="none";
+  pendingPhoto=null;
+}
+
+function confirmPhoto(){
+  if(!pendingPhoto) return;
+  var desc=document.getElementById("modal-desc").value.trim();
+  var photo=pendingPhoto;
+  closeModal();
+  logMeal({description:desc, imageBase64:photo.imageBase64, imageUrl:photo.imageUrl});
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+load(); // load() handles renderMealTypeBtns() and renderAll() after server responds
+</script>
+</body>
+</html>
