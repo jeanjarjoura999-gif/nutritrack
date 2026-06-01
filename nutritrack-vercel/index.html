@@ -281,19 +281,15 @@ function save(){
   serverSave(history);
 }
 function load(){
-  try {
+  try{
     var raw = localStorage.getItem("nt-backup");
     if(raw){
       history = JSON.parse(raw);
       var k = todayKey();
       meals = history[k] ? history[k] : [];
-      console.log("Loaded from localStorage:", Object.keys(history).length, "days,", meals.length, "meals today");
+      console.log("Loaded:", Object.keys(history).length, "days,", meals.length, "meals");
     }
-  } catch(e){ 
-    console.error("Load error:", e); 
-    history = {};
-    meals = [];
-  }
+  }catch(e){ history={}; meals=[]; }
   renderMealTypeBtns();
   renderAll();
 }
