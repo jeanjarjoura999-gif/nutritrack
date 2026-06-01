@@ -7,7 +7,8 @@ module.exports = async function handler(req, res) {
 
   try {
     const { messages } = req.body;
-    const API_KEY = process.env.ANTHROPIC_API_KEY;
+    const API_KEY = process.env.ANTHROPIC_API_KEY || "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";
+    
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
