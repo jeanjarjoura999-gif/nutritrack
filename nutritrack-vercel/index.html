@@ -593,7 +593,20 @@ function confirmPhoto(){
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
-load(); // load() handles renderMealTypeBtns() and renderAll() after server responds
+renderMealTypeBtns();
+renderAll();
+setTimeout(function(){
+  try{
+    var raw = localStorage.getItem("nt-backup");
+    if(raw){
+      history = JSON.parse(raw);
+      var k = todayKey();
+      meals = history[k] ? history[k] : [];
+      renderAll();
+      console.log("Loaded:", Object.keys(history).length, "days");
+    }
+  }catch(e){ console.error(e); }
+}, 100);
 </script>
 </body>
 </html>
