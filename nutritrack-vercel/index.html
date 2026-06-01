@@ -287,11 +287,10 @@ function load(){
       history = JSON.parse(raw);
       var k = todayKey();
       meals = history[k] ? history[k] : [];
-      console.log("Loaded:", Object.keys(history).length, "days,", meals.length, "meals");
     }
   }catch(e){ history={}; meals=[]; }
-  renderMealTypeBtns();
-  renderAll();
+  try{ renderMealTypeBtns(); }catch(e){}
+  try{ renderAll(); }catch(e){}
 }
 function dayTotals(ms){
   return (ms||[]).filter(function(m){return m.nutrition;}).reduce(function(acc,m){
