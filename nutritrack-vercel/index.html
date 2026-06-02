@@ -245,12 +245,15 @@ function serverLoad(cb){
   }).then(function(r){ return r.json(); })
     .then(function(d){
       var h = d.history || {};
-      console.log("Loaded from Supabase:", Object.keys(h).length, "days,", h[todayKey()] ? h[todayKey()].length : 0, "meals today");
+      var keys = Object.keys(h);
+      console.log("Loaded from server:", keys.length, "days, keys:", JSON.stringify(keys));
+      console.log("Today key:", todayKey());
+      if(h[todayKey()]) console.log("Today meals:", h[todayKey()].length);
       cb(h);
     })
     .catch(function(e){
       console.error("Server load failed:", e);
-      cb({});
+      // Don't call cb with empty data - just fail silently
     });
 }
 
