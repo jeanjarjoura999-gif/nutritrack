@@ -245,18 +245,11 @@ function serverLoad(cb){
   }).then(function(r){ return r.json(); })
     .then(function(d){
       var h = d.history || {};
-      var keys = Object.keys(h);
-      console.log("Loaded from server:", keys.length, "days, keys:", JSON.stringify(keys));
-      console.log("Today key:", todayKey());
-      if(h[todayKey()]) console.log("Today meals:", h[todayKey()].length);
+      console.log("Loaded from Supabase:", Object.keys(h).length, "days,", h[todayKey()] ? h[todayKey()].length : 0, "meals today");
       cb(h);
     })
     .catch(function(e){
       console.error("Server load failed:", e);
-      try{
-        var local = localStorage.getItem("nt-backup");
-        if(local){ cb(JSON.parse(local)); return; }
-      }catch(ex){}
       cb({});
     });
 }
