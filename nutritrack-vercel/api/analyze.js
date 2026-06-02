@@ -12,22 +12,21 @@ module.exports = async function handler(req, res) {
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ybXdncG9jaGR0c2xzZXdodmR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzMDE4MzMsImV4cCI6MjA5NTg3NzgzM30.fhVzmUezDsBy_OdMt5zIH25LIGPHEVDBBVskHVZojq8";
 
     // ── Save history ──────────────────────────────────────────────────────
-    if (action === "save") {
-      // First try to update existing row
-      const updateRes = await fetch(`${SUPABASE_URL}/rest/v1/history?id=eq.1`, {
-        method: "PATCH",
-        headers: {
-          "apikey": SUPABASE_KEY,
-          "Authorization": `Bearer ${SUPABASE_KEY}`,
-          "Content-Type": "application/json",
-          "Prefer": "return=representation"
-        },
-        body: JSON.stringify({ data: body.history })
-      });
-      const updateData = await updateRes.json();
-      console.log("Update result:", updateRes.status, JSON.stringify(updateData).slice(0,100));
-      return res.status(200).json({ ok: true, status: updateRes.status });
-    }
+  if (action === "save") {
+  const updateRes = await fetch(`${SUPABASE_URL}/rest/v1/history`, {
+    method: "POST",
+    headers: {
+      "apikey": SUPABASE_KEY,
+      "Authorization": `Bearer ${SUPABASE_KEY}`,
+      "Content-Type": "application/json",
+      "Prefer": "resolution=merge-duplicates,return=representation"
+    },
+    body: JSON.stringify({ id: 1, data: body.history })
+  });
+  const updateData = await updateRes.json();
+  console.log("Upsert result:", updateRes.status, JSON.stringify(updateData).slice(0,100));
+  return res.status(200).json({ ok: true, status: updateRes.status });
+}
 
     // ── Load history ──────────────────────────────────────────────────────
     if (action === "load") {
