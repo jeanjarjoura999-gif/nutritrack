@@ -245,17 +245,13 @@ function serverLoad(cb){
     body: JSON.stringify({action:"load"})
   }).then(function(r){ return r.json(); })
     .then(function(d){
-      if(called) return;
-      called = true;
       var h = d.history || {};
       console.log("Loaded from Supabase:", Object.keys(h).length, "days");
       cb(h);
     })
     .catch(function(e){
       console.error("Server load failed:", e);
-      if(called) return;
-      called = true;
-      cb({});
+      // Don't call cb - let the page show empty state
     });
 }
 
