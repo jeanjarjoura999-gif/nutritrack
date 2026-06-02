@@ -278,11 +278,10 @@ function save(){
   serverSave(history);
 }
 function load(){
-  console.log("load() called from:", new Error().stack.split("\n")[1]);
   renderMealTypeBtns();
   renderAll();
   serverLoad(function(data){
-    console.log("serverLoad callback fired with", Object.keys(data||{}).length, "days, type:", typeof data, "keys:", JSON.stringify(Object.keys(data||{}))), new Error().stack.split("\n")[1]);
+    console.log("serverLoad callback fired with", Object.keys(data||{}).length, "days, keys:", JSON.stringify(Object.keys(data||{})));
     // Only update if we got real data
     if(!data || Object.keys(data).length === 0) return;
     history = data;
