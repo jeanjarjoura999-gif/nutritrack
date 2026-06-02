@@ -281,21 +281,17 @@ function save(){
   serverSave(history);
 }
 function load(){
-  try {
-    var raw = localStorage.getItem("nt-backup");
-    if(raw){
-      history = JSON.parse(raw);
-      var k = todayKey();
-      meals = history[k] ? history[k] : [];
-      console.log("Loaded from localStorage:", Object.keys(history).length, "days,", meals.length, "meals today");
-    }
-  } catch(e){ 
-    console.error("Load error:", e); 
-    history = {};
-    meals = [];
-  }
   renderMealTypeBtns();
   renderAll();
+  serverLoad(function(data){
+    if(data && Object.keys(data).length > 0){
+      history = data;
+      var k = todayKey();
+      meals = history[k] ? history[k] : [];
+      console.log("Loaded from Supabase:", Object.keys(history).length, "days,", meals.length, "meals today");
+      renderAll();
+    }
+  });
 }
 function dayTotals(ms){
   return (ms||[]).filter(function(m){return m.nutrition;}).reduce(function(acc,m){
