@@ -238,22 +238,24 @@ function serverSave(historyData){
 }
 
 function serverLoad(cb){
+  var called = false;
   fetch("/api/analyze", {
     method: "POST",
     headers: {"Content-Type":"application/json"},
     body: JSON.stringify({action:"load"})
   }).then(function(r){ return r.json(); })
     .then(function(d){
+      if(called) return;
+      called = true;
       var h = d.history || {};
-      var keys = Object.keys(h);
-      console.log("Loaded from server:", keys.length, "days, keys:", JSON.stringify(keys));
-      console.log("Today key:", todayKey());
-      if(h[todayKey()]) console.log("Today meals:", h[todayKey()].length);
+      console.log("Loaded from Supabase:", Object.keys(h).length, "days");
       cb(h);
     })
     .catch(function(e){
       console.error("Server load failed:", e);
-      // Don't call cb with empty data - just fail silently
+      if(called) return;
+      called = true;
+      cb({});
     });
 }
 
@@ -280,13 +282,13 @@ function load(){
   renderMealTypeBtns();
   renderAll();
   serverLoad(function(data){
-    if(data && Object.keys(data).length > 0){
-      history = data;
-      var k = todayKey();
-      meals = history[k] ? history[k] : [];
-      console.log("Loaded from Supabase:", Object.keys(history).length, "days,", meals.length, "meals today");
-      renderAll();
-    }
+    // Only update if we got real data
+    if(!data || Object.keys(data).length === 0) return;
+    history = data;
+    var k = todayKey();
+    meals = history[k] ? history[k] : [];
+    console.log("Loaded from Supabase:", Object.keys(history).length, "days,", meals.length, "meals today");
+    renderAll();
   });
 }
 function dayTotals(ms){
