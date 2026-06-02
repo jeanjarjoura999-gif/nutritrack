@@ -246,7 +246,10 @@ function serverLoad(cb){
   }).then(function(r){ return r.json(); })
     .then(function(d){
       var h = d.history || {};
-      console.log("Loaded from Supabase:", Object.keys(h).length, "days");
+      // If history values are strings, parse them
+      if(typeof h === "string") h = JSON.parse(h);
+      var keys = Object.keys(h);
+      console.log("Loaded from Supabase:", keys.length, "days, first key:", keys[0]);
       cb(h);
     })
     .catch(function(e){
@@ -279,7 +282,7 @@ function load(){
   renderMealTypeBtns();
   renderAll();
   serverLoad(function(data){
-    console.log("serverLoad callback fired with", Object.keys(data||{}).length, "days", new Error().stack.split("\n")[1]);
+    console.log("serverLoad callback fired with", Object.keys(data||{}).length, "days, type:", typeof data, "keys:", JSON.stringify(Object.keys(data||{}))), new Error().stack.split("\n")[1]);
     // Only update if we got real data
     if(!data || Object.keys(data).length === 0) return;
     history = data;
